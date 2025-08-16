@@ -113,9 +113,7 @@ Program succeeded Stylus onchain activation checks with Stylus version: 1
 Next, we can estimate the gas costs to deploy and activate our program before we send our transaction. Check out the [cargo-stylus](https://github.com/OffchainLabs/cargo-stylus) README to see the different wallet options for this step:
 
 ```bash
-cargo stylus deploy \
-  --private-key-path=<PRIVKEY_FILE_PATH> \
-  --estimate-gas
+cargo stylus deploy  --endpoint='https://sepolia-rollup.arbitrum.io/rpc' --private-key="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659"
 ```
 
 You will then see the estimated gas cost for deploying before transacting:

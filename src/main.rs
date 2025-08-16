@@ -5,6 +5,6 @@
 pub extern "C" fn main() {}
 
 #[cfg(feature = "export-abi")]
-fn main() {
-    stylus_hello_world::print_from_args();
+fn main() {        
+    poseidon_mina::print_from_args();
 }

@@ -1,4 +1,4 @@
-use stylus_hello_world::PoseidonContract;
+use poseidon_mina::PoseidonContract;
 use stylus_sdk::{alloy_primitives::U256, prelude::*};
 
 #[cfg(test)]
