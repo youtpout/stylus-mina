@@ -212,8 +212,6 @@ Where you can find `YOUR_ARCHITECTURE` by running `rustc -vV | grep host`. For M
 This project is fully open source, including an Apache-2.0 or MIT license at your choosing under your own copyright.
 
 
-## Simulate
+## Address
 
-```
-cargo stylus simulate  --function "hash(uint256,uint256)" --args "3412,548748548"
-```
+Sepolia 0xe3051507db7881fa2b3b1fd6923211f52aff646b
