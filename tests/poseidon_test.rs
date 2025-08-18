@@ -1,9 +1,8 @@
 use poseidon_mina::PoseidonContract;
-use stylus_sdk::{alloy_primitives::U256, prelude::*};
+use stylus_sdk::{alloy_primitives::U256};
 
 #[cfg(test)]
 mod test {
-    use stylus_sdk::console;
 
     use super::*;
 
@@ -11,7 +10,7 @@ mod test {
     fn test_hash_list() {
         use stylus_sdk::testing::*;
         let vm = TestVM::default();
-        let mut contract = PoseidonContract::from(&vm);
+        let contract = PoseidonContract::from(&vm);
         let vec: Vec<U256> = vec![U256::from(3412), U256::from(548748548)];
         let result = contract.hash(vec);
 
