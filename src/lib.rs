@@ -2,36 +2,52 @@
 #![cfg_attr(not(any(test, feature = "export-abi")), no_main)]
 #![cfg_attr(not(any(test, feature = "export-abi")), no_std)]
 
-mod poseidon;
-use poseidon::PoseidonHash;
+use openzeppelin_crypto::{
+    arithmetic::uint::U256,
+    field::{instance::FpKimchi, prime::PrimeField},
+    poseidon_mina::{instance::kimchi::KimchiParams, PoseidonMina},
+};
 
 #[macro_use]
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
 /// Import items from the SDK. The prelude contains common traits and macros.
-use stylus_sdk::{alloy_primitives::U256,  prelude::*};
+use stylus_sdk::prelude::*;
 
 // Define some persistent storage using the Solidity ABI.
 // `Counter` will be the entrypoint.
 sol_storage! {
     #[entrypoint]
     pub struct PoseidonContract {
-      
+
     }
 }
 
 /// Declare that `Counter` is a contract with the following external methods.
 #[public]
 impl PoseidonContract {
-   
-    pub fn hash(&self, vec: Vec<U256>) -> U256 {
-        let poseidon_input = PoseidonHash::hash(vec);
-        return poseidon_input;
+    pub fn hash(&self, vec: Vec<alloy_primitives::U256>) -> alloy_primitives::U256 {
+        let mut poseidon = PoseidonMina::<KimchiParams, FpKimchi>::new();
+
+        for input in vec.iter() {
+            let fp = FpKimchi::from_bigint(U256::from(*input));
+            poseidon.absorb(&[fp]);
+        }
+
+        let hash = poseidon.squeeze();
+        hash.into_bigint().into()
     }
 
-     pub fn hash_function(&mut self, vec: Vec<U256>) -> U256 {
-        let poseidon_input = PoseidonHash::hash(vec);
-        return poseidon_input;
+    pub fn hash_function(&mut self, vec: Vec<alloy_primitives::U256>) -> alloy_primitives::U256 {
+        let mut poseidon = PoseidonMina::<KimchiParams, FpKimchi>::new();
+
+        for input in vec.iter() {
+            let fp = FpKimchi::from_bigint(U256::from(*input));
+            poseidon.absorb(&[fp]);
+        }
+
+        let hash = poseidon.squeeze();
+        hash.into_bigint().into()
     }
 }
