@@ -8,7 +8,6 @@ use openzeppelin_crypto::{
     poseidon_mina::{instance::kimchi::KimchiParams, PoseidonMina},
 };
 
-#[macro_use]
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
