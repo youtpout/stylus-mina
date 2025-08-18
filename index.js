@@ -3,7 +3,7 @@ const { ethers } = require('ethers');
 // Configuration
 const PRIVATE_KEY = '0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659'; // Replace with your private key
 const RPC_URL = 'http://localhost:8547'; // Stylus testnet RPC
-const CONTRACT_ADDRESS = '0xc2c0c3398915a2d2e9c33c186abfef3192ee25e8'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = '0x84401cd7abbebb22acb7af2becfd9be56c30bcf1'; // Replace with your deployed contract address
 
 // Contract ABI
 const ABI = [
@@ -20,6 +20,7 @@ async function main() {
         const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
         console.log('🔗 Connecting to network...');
+        console.log('Contract address:', CONTRACT_ADDRESS);
         console.log('Wallet address:', wallet.address);
 
         // Check wallet balance
