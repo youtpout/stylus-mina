@@ -119,7 +119,7 @@ async function compareGasCosts() {
         const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, wallet);
 
         // Test with different vector sizes
-        const sizes = [1, 2, 5, 10];
+        const sizes = [1, 2, 5, 10, 20, 50, 100];
 
         for (const size of sizes) {
             // Create vector with specified size
