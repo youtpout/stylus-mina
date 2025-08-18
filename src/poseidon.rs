@@ -1171,53 +1171,54 @@ static ROUND_CONSTANTS: [[U256; 3]; 55] = [
 
 pub struct FiniteField;
 impl FiniteField {
-    pub fn mod_p(x: U256, p: U256) -> U256 {
-        if x < p {
+    // Prime field modulus pour Mina - hard-codé
+    const P: U256 = U256::from_limbs([
+        0x992d30ed00000001,
+        0x224698fc094cf91b,
+        0x0000000000000000,
+        0x4000000000000000,
+    ]);
+
+    #[inline]
+    pub fn mod_p(x: U256) -> U256 {
+        if x < Self::P {
             x
         } else {
-            x % p
+            x % Self::P
         }
     }
 
-    pub fn power(a: U256, n: u32, p: U256) -> U256 {
-        let mut a = Self::mod_p(a, p);
-        let mut x = U256::from(1);
-        let mut n = n;
-
-        // Special optimization for power 7 (used in Poseidon)
-        if n == 7 {
-            let a2 = Self::mul(a, a, p); // a^2
-            let a4 = Self::mul(a2, a2, p); // a^4
-            let a3 = Self::mul(a2, a, p); // a^3 = a^2 * a
-            return Self::mul(a4, a3, p); // a^7 = a^4 * a^3
+    // Optimisation spéciale pour l'exposant 7 (power = 7 hard-codé)
+    #[inline]
+    pub fn power_seven(a: U256) -> U256 {
+        let a_mod = Self::mod_p(a);
+        if a_mod.is_zero() {
+            return U256::ZERO;
         }
 
-        // General case for other exponents
-        while n > 0 {
-            if n & 1 != 0 {
-                x = Self::mul(x, a, p);
-            }
-            a = Self::mul(a, a, p);
-            n >>= 1;
-        }
-        x
+        // a^7 = a^4 * a^2 * a optimisé
+        let a2 = Self::mul(a_mod, a_mod);
+        let a4 = Self::mul(a2, a2);
+        let a6 = Self::mul(a4, a2);
+        Self::mul(a6, a_mod)
     }
 
-    pub fn add(x: U256, y: U256, p: U256) -> U256 {
+    #[inline]
+    pub fn add(x: U256, y: U256) -> U256 {
         let sum = x.wrapping_add(y);
-        if sum >= p {
-            sum - p
+        if sum >= Self::P {
+            sum - Self::P
         } else {
             sum
         }
     }
 
-    pub fn mul(x: U256, y: U256, p: U256) -> U256 {
-        let x_mod = Self::mod_p(x, p);
-        let y_mod = Self::mod_p(y, p);
+    #[inline]
+    pub fn mul(x: U256, y: U256) -> U256 {
+        let x_mod = Self::mod_p(x);
+        let y_mod = Self::mod_p(y);
 
-        // For large numbers, we need to be careful about overflow
-        if x_mod == U256::ZERO || y_mod == U256::ZERO {
+        if x_mod.is_zero() || y_mod.is_zero() {
             return U256::ZERO;
         }
 
@@ -1228,9 +1229,9 @@ impl FiniteField {
 
         while multiplier > U256::ZERO {
             if multiplier & U256::from(1) != U256::ZERO {
-                result = Self::add(result, multiplicand, p);
+                result = Self::add(result, multiplicand);
             }
-            multiplicand = Self::add(multiplicand, multiplicand, p);
+            multiplicand = Self::add(multiplicand, multiplicand);
             multiplier >>= 1;
         }
 
@@ -1241,30 +1242,20 @@ impl FiniteField {
 pub struct PoseidonHash;
 
 impl PoseidonHash {
-    // Prime field modulus for Mina
-    const P: U256 = U256::from_limbs([
-        0x992d30ed00000001,
-        0x224698fc094cf91b,
-        0x0000000000000000,
-        0x4000000000000000,
-    ]);
-
-    /// Main hash function - equivalent to the C# Hash method
+    /// Hash principal - configuration hard-codée
     pub fn hash(input: Vec<U256>) -> U256 {
-        let initial_state = vec![U256::ZERO; 3];     
-        Self::poseidon_update(initial_state, input)[0]
+        let mut state = [U256::ZERO; 3];
+        Self::poseidon_update(&mut state, &input);
+        state[0]
     }
 
-    pub fn poseidon_update(
-        mut state: Vec<U256>,
-        input: Vec<U256>
-    ) -> Vec<U256> {
+    pub fn poseidon_update(state: &mut [U256; 3], input: &[U256]) {
         if input.is_empty() {
-            Self::permutation(&mut state);
-            return state;
+            Self::permutation(state);
+            return;
         }
 
-        // Calculate padded length
+        // Calculate padded length (comme dans l'original)
         let padded_len = if input.len() % 2 == 0 {
             input.len()
         } else {
@@ -1273,51 +1264,69 @@ impl PoseidonHash {
 
         let mut array = vec![U256::ZERO; padded_len];
 
-        // Copy input to array
+        // Copy input to array (comme dans l'original)
         for (i, &val) in input.iter().enumerate() {
             array[i] = val;
         }
 
-        let p = Self::P;
-
-        // Process each block
+        // Process each block (rate = 2 hard-codé)
         for chunk in array.chunks(2) {
             for (i, &val) in chunk.iter().enumerate() {
-                if i < 2 {
-                    state[i] = FiniteField::add(state[i], val, p);
+                if i < 2 {  // rate = 2
+                    state[i] = FiniteField::add(state[i], val);
                 }
             }
-            Self::permutation(&mut state);
+            Self::permutation(state);
         }
-
-        state
     }
 
-    pub fn permutation(state: &mut Vec<U256>) {
-        let p = Self::P;
-        let state_size = 3;
-
-        // Handle initial round constant if needed
-        let mut round_offset = 0;      
-
-        // Main rounds
+    #[inline]
+    pub fn permutation(state: &mut [U256; 3]) {
+        // 55 rounds hard-codés, state_size = 3, has_initial_round_constant = false
         for round in 0..55 {
-            // S-box layer: raise each element to power
-            for i in 0..state_size {
-                state[i] = FiniteField::power(state[i], 7, p);
-            }
+            // S-box layer: a^7 pour chaque élément (power = 7 hard-codé)
+            state[0] = FiniteField::power_seven(state[0]);
+            state[1] = FiniteField::power_seven(state[1]);
+            state[2] = FiniteField::power_seven(state[2]);
 
-            // Linear layer: matrix multiplication + round constants
-            let mut new_state = vec![U256::ZERO; state_size];
-            for i in 0..state_size {
-                let mut acc = ROUND_CONSTANTS[round + round_offset][i];
-                for j in 0..state_size {
-                    let prod = FiniteField::mul(MDS[i][j], state[j], p);
-                    acc = FiniteField::add(acc, prod, p);
-                }
-                new_state[i] = acc;
-            }
-            *state = new_state;
-        }
-    }
+            // Linear layer avec MDS matrix et round constants hard-codées
+            let s0 = state[0];
+            let s1 = state[1];
+            let s2 = state[2];
+
+            // Multiplication matricielle optimisée (déroulée) avec constantes hard-codées
+            state[0] = FiniteField::add(
+                FiniteField::add(
+                    FiniteField::add(
+                        FiniteField::mul(MDS[0][0], s0),
+                        FiniteField::mul(MDS[0][1], s1)
+                    ),
+                    FiniteField::mul(MDS[0][2], s2)
+                ),
+                ROUND_CONSTANTS[round][0]
+            );
+
+            state[1] = FiniteField::add(
+                FiniteField::add(
+                    FiniteField::add(
+                        FiniteField::mul(MDS[1][0], s0),
+                        FiniteField::mul(MDS[1][1], s1)
+                    ),
+                    FiniteField::mul(MDS[1][2], s2)
+                ),
+                ROUND_CONSTANTS[round][1]
+            );
+
+            state[2] = FiniteField::add(
+                FiniteField::add(
+                    FiniteField::add(
+                        FiniteField::mul(MDS[2][0], s0),
+                        FiniteField::mul(MDS[2][1], s1)
+                    ),
+                    FiniteField::mul(MDS[2][2], s2)
+                ),
+                ROUND_CONSTANTS[round][2]
+            );
+        }    }
+
 }
