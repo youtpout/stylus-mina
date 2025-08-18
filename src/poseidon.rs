@@ -1,69 +1,6 @@
 use alloc::vec::Vec;
 use stylus_sdk::alloy_primitives::U256;
 
-// Constantes statiques pour éviter les allocations
-static MDS: [[U256; 3]; 3] = [
-    [
-        U256::from_limbs([
-            0xb7ea1fac679c7903,
-            0xe20a56307d6491e7,
-            0x4959b9bef59b4e60,
-            0x1a9bd250757e29ef,
-        ]),
-        U256::from_limbs([
-            0x96b48a7320c506cd,
-            0x2e6d5d455ae4a136,
-            0x7e2d64f6a030aa24,
-            0x384aa09faf3a4873,
-        ]),
-        U256::from_limbs([
-            0x061217be9e6cfed5,
-            0xf8346506bfa6d076,
-            0x064d5ce4a7a03653,
-            0x3d2b7b0209bc3080,
-        ]),
-    ],
-    [
-        U256::from_limbs([
-            0x24b7aaf3b4bf3a42,
-            0xa79868a4a8a5913e,
-            0x0b107983afcfabbe,
-            0x09ee57c70bc35122,
-        ]),
-        U256::from_limbs([
-            0x1e9a5b5436a2458f,
-            0x3115267f35225d7e,
-            0x17684d3ad4c85981,
-            0x20989996bc29a96d,
-        ]),
-        U256::from_limbs([
-            0x347cdb74c3b2e69d,
-            0x191edde8a5632298,
-            0x32116419ee7f26d9,
-            0x14e39adb2e171ae2,
-        ]),
-    ],
-    [
-        U256::from_limbs([
-            0x357f112316ef67cb,
-            0x5452d5d441597a94,
-            0xa9590c1df621818b,
-            0x174544357b687f65,
-        ]),
-        U256::from_limbs([
-            0xfcee35f02c2c4137,
-            0x95dffc53212db207,
-            0xcfbf15b0166bb25f,
-            0x3ca9263dc1a19d17,
-        ]),
-        U256::from_limbs([
-            0x4d6581d50aae114c,
-            0xb2dc21d269ba7c4c,
-            0xb7a812f80b7b0373,
-            0x3cf1fbef75d4ab63,
-        ]),
-    ],
-];
 
 static ROUND_CONSTANTS: [[U256; 3]; 55] = [
     [
@@ -1168,7 +1105,6 @@ static ROUND_CONSTANTS: [[U256; 3]; 55] = [
     ],
 ];
 
-
 pub struct FiniteField;
 impl FiniteField {
     // Prime field modulus pour Mina - hard-codé
@@ -1272,7 +1208,8 @@ impl PoseidonHash {
         // Process each block (rate = 2 hard-codé)
         for chunk in array.chunks(2) {
             for (i, &val) in chunk.iter().enumerate() {
-                if i < 2 {  // rate = 2
+                if i < 2 {
+                    // rate = 2
                     state[i] = FiniteField::add(state[i], val);
                 }
             }
@@ -1298,35 +1235,107 @@ impl PoseidonHash {
             state[0] = FiniteField::add(
                 FiniteField::add(
                     FiniteField::add(
-                        FiniteField::mul(MDS[0][0], s0),
-                        FiniteField::mul(MDS[0][1], s1)
+                        FiniteField::mul(
+                            U256::from_limbs([
+                                0xb7ea1fac679c7903,
+                                0xe20a56307d6491e7,
+                                0x4959b9bef59b4e60,
+                                0x1a9bd250757e29ef,
+                            ]),
+                            s0,
+                        ),
+                        FiniteField::mul(
+                            U256::from_limbs([
+                                0x96b48a7320c506cd,
+                                0x2e6d5d455ae4a136,
+                                0x7e2d64f6a030aa24,
+                                0x384aa09faf3a4873,
+                            ]),
+                            s1,
+                        ),
                     ),
-                    FiniteField::mul(MDS[0][2], s2)
+                    FiniteField::mul(
+                        U256::from_limbs([
+                            0x061217be9e6cfed5,
+                            0xf8346506bfa6d076,
+                            0x064d5ce4a7a03653,
+                            0x3d2b7b0209bc3080,
+                        ]),
+                        s2,
+                    ),
                 ),
-                ROUND_CONSTANTS[round][0]
+                ROUND_CONSTANTS[round][0],
             );
 
             state[1] = FiniteField::add(
                 FiniteField::add(
                     FiniteField::add(
-                        FiniteField::mul(MDS[1][0], s0),
-                        FiniteField::mul(MDS[1][1], s1)
+                        FiniteField::mul(
+                            U256::from_limbs([
+                                0x24b7aaf3b4bf3a42,
+                                0xa79868a4a8a5913e,
+                                0x0b107983afcfabbe,
+                                0x09ee57c70bc35122,
+                            ]),
+                            s0,
+                        ),
+                        FiniteField::mul(
+                            U256::from_limbs([
+                                0x1e9a5b5436a2458f,
+                                0x3115267f35225d7e,
+                                0x17684d3ad4c85981,
+                                0x20989996bc29a96d,
+                            ]),
+                            s1,
+                        ),
                     ),
-                    FiniteField::mul(MDS[1][2], s2)
+                    FiniteField::mul(
+                        U256::from_limbs([
+                            0x347cdb74c3b2e69d,
+                            0x191edde8a5632298,
+                            0x32116419ee7f26d9,
+                            0x14e39adb2e171ae2,
+                        ]),
+                        s2,
+                    ),
                 ),
-                ROUND_CONSTANTS[round][1]
+                ROUND_CONSTANTS[round][1],
             );
 
             state[2] = FiniteField::add(
                 FiniteField::add(
                     FiniteField::add(
-                        FiniteField::mul(MDS[2][0], s0),
-                        FiniteField::mul(MDS[2][1], s1)
+                        FiniteField::mul(
+                            U256::from_limbs([
+                                0x357f112316ef67cb,
+                                0x5452d5d441597a94,
+                                0xa9590c1df621818b,
+                                0x174544357b687f65,
+                            ]),
+                            s0,
+                        ),
+                        FiniteField::mul(
+                            U256::from_limbs([
+                                0xfcee35f02c2c4137,
+                                0x95dffc53212db207,
+                                0xcfbf15b0166bb25f,
+                                0x3ca9263dc1a19d17,
+                            ]),
+                            s1,
+                        ),
                     ),
-                    FiniteField::mul(MDS[2][2], s2)
+                    FiniteField::mul(
+                        U256::from_limbs([
+                            0x4d6581d50aae114c,
+                            0xb2dc21d269ba7c4c,
+                            0xb7a812f80b7b0373,
+                            0x3cf1fbef75d4ab63,
+                        ]),
+                        s2,
+                    ),
                 ),
-                ROUND_CONSTANTS[round][2]
+                ROUND_CONSTANTS[round][2],
             );
-        }    }
-
+        }
+    }
 }

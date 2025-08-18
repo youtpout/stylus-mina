@@ -29,12 +29,12 @@ mod test {
         use stylus_sdk::testing::*;
         let vm = TestVM::default();
         let mut contract = PoseidonContract::from(&vm);
-        let vec: Vec<U256> = vec![U256::from(3412), U256::from(548748548)];
+        let vec: Vec<U256> = vec![U256::from(12)];
         let result = contract.hash_function(vec);
 
         assert_eq!(
             U256::from_str_radix(
-                "24245350037390325723675562428846509781869515058976947458013661211417354108422",
+                "20307190475163560179843878304233687113040243867319358507811895775846718326775",
                 10
             )
             .unwrap(),
