@@ -234,6 +234,12 @@ This project is fully open source, including an Apache-2.0 or MIT license at you
 Sepolia 0xe3051507db7881fa2b3b1fd6923211f52aff646b
 
 
-## Bid
+## Deploy and Bid
 
+```bash
+cargo stylus deploy  --endpoint='http://localhost:8547' --private-key="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659"
+```
+
+```bash
 cargo stylus cache bid --endpoint='http://localhost:8547'   --private-key="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659" 0xd92773693917f0ff664f85c3cb698c33420947ff 10
+```
