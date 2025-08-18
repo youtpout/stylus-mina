@@ -3,7 +3,7 @@ const { ethers } = require('ethers');
 // Configuration
 const PRIVATE_KEY = '0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659'; // Replace with your private key
 const RPC_URL = 'http://localhost:8547'; // Stylus testnet RPC
-const CONTRACT_ADDRESS = '0x408da76e87511429485c32e4ad647dd14823fdc4'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = '0x1b9cbdc65a7bebb0be7f18d93a1896ea1fd46d7a'; // Replace with your deployed contract address
 
 // Contract ABI
 const ABI = [
