@@ -1,17 +1,6 @@
 use alloc::vec::Vec;
 use stylus_sdk::alloy_primitives::U256;
 
-#[derive(Clone)]
-pub struct PoseidonConfig {
-    pub mds: &'static [&'static [U256; 3]; 3],
-    pub round_constants: &'static [&'static [U256; 3]],
-    pub full_rounds: usize,
-    pub has_initial_round_constant: bool,
-    pub state_size: usize,
-    pub rate: usize,
-    pub power: u32,
-}
-
 // Constantes statiques pour éviter les allocations
 static MDS: [[U256; 3]; 3] = [
     [
@@ -75,9 +64,6 @@ static MDS: [[U256; 3]; 3] = [
         ]),
     ],
 ];
-
-// Conversion des MDS en références statiques
-static MDS_REFS: [&[U256; 3]; 3] = [&MDS[0], &MDS[1], &MDS[2]];
 
 static ROUND_CONSTANTS: [[U256; 3]; 55] = [
     [
@@ -1182,79 +1168,6 @@ static ROUND_CONSTANTS: [[U256; 3]; 55] = [
     ],
 ];
 
-static ROUND_CONSTANTS_REFS: [&[U256; 3]; 55] = [
-    &ROUND_CONSTANTS[0],
-    &ROUND_CONSTANTS[1],
-    &ROUND_CONSTANTS[2],
-    &ROUND_CONSTANTS[3],
-    &ROUND_CONSTANTS[4],
-    &ROUND_CONSTANTS[5],
-    &ROUND_CONSTANTS[6],
-    &ROUND_CONSTANTS[7],
-    &ROUND_CONSTANTS[8],
-    &ROUND_CONSTANTS[9],
-    &ROUND_CONSTANTS[10],
-    &ROUND_CONSTANTS[11],
-    &ROUND_CONSTANTS[12],
-    &ROUND_CONSTANTS[13],
-    &ROUND_CONSTANTS[14],
-    &ROUND_CONSTANTS[15],
-    &ROUND_CONSTANTS[16],
-    &ROUND_CONSTANTS[17],
-    &ROUND_CONSTANTS[18],
-    &ROUND_CONSTANTS[19],
-    &ROUND_CONSTANTS[20],
-    &ROUND_CONSTANTS[21],
-    &ROUND_CONSTANTS[22],
-    &ROUND_CONSTANTS[23],
-    &ROUND_CONSTANTS[24],
-    &ROUND_CONSTANTS[25],
-    &ROUND_CONSTANTS[26],
-    &ROUND_CONSTANTS[27],
-    &ROUND_CONSTANTS[28],
-    &ROUND_CONSTANTS[29],
-    &ROUND_CONSTANTS[30],
-    &ROUND_CONSTANTS[31],
-    &ROUND_CONSTANTS[32],
-    &ROUND_CONSTANTS[33],
-    &ROUND_CONSTANTS[34],
-    &ROUND_CONSTANTS[35],
-    &ROUND_CONSTANTS[36],
-    &ROUND_CONSTANTS[37],
-    &ROUND_CONSTANTS[38],
-    &ROUND_CONSTANTS[39],
-    &ROUND_CONSTANTS[40],
-    &ROUND_CONSTANTS[41],
-    &ROUND_CONSTANTS[42],
-    &ROUND_CONSTANTS[43],
-    &ROUND_CONSTANTS[44],
-    &ROUND_CONSTANTS[45],
-    &ROUND_CONSTANTS[46],
-    &ROUND_CONSTANTS[47],
-    &ROUND_CONSTANTS[48],
-    &ROUND_CONSTANTS[49],
-    &ROUND_CONSTANTS[50],
-    &ROUND_CONSTANTS[51],
-    &ROUND_CONSTANTS[52],
-    &ROUND_CONSTANTS[53],
-    &ROUND_CONSTANTS[54],
-];
-
-pub struct PoseidonConstant;
-
-impl PoseidonConstant {
-    pub fn poseidon_config_kimchi_fp() -> PoseidonConfig {
-        PoseidonConfig {
-            mds: &MDS_REFS,
-            round_constants: &ROUND_CONSTANTS_REFS,
-            full_rounds: 55,
-            has_initial_round_constant: false,
-            state_size: 3,
-            rate: 2,
-            power: 7,
-        }
-    }
-}
 
 pub struct FiniteField;
 impl FiniteField {
@@ -1338,26 +1251,24 @@ impl PoseidonHash {
 
     /// Main hash function - equivalent to the C# Hash method
     pub fn hash(input: Vec<U256>) -> U256 {
-        let initial_state = vec![U256::ZERO; 3];
-        let config = PoseidonConstant::poseidon_config_kimchi_fp();
-        Self::poseidon_update(initial_state, input, &config)[0]
+        let initial_state = vec![U256::ZERO; 3];     
+        Self::poseidon_update(initial_state, input)[0]
     }
 
     pub fn poseidon_update(
         mut state: Vec<U256>,
-        input: Vec<U256>,
-        config: &PoseidonConfig,
+        input: Vec<U256>
     ) -> Vec<U256> {
         if input.is_empty() {
-            Self::permutation(&mut state, config);
+            Self::permutation(&mut state);
             return state;
         }
 
         // Calculate padded length
-        let padded_len = if input.len() % config.rate == 0 {
+        let padded_len = if input.len() % 2 == 0 {
             input.len()
         } else {
-            ((input.len() / config.rate) + 1) * config.rate
+            ((input.len() / 2) + 1) * 2
         };
 
         let mut array = vec![U256::ZERO; padded_len];
@@ -1370,44 +1281,38 @@ impl PoseidonHash {
         let p = Self::P;
 
         // Process each block
-        for chunk in array.chunks(config.rate) {
+        for chunk in array.chunks(2) {
             for (i, &val) in chunk.iter().enumerate() {
-                if i < config.rate {
+                if i < 2 {
                     state[i] = FiniteField::add(state[i], val, p);
                 }
             }
-            Self::permutation(&mut state, config);
+            Self::permutation(&mut state);
         }
 
         state
     }
 
-    pub fn permutation(state: &mut Vec<U256>, config: &PoseidonConfig) {
+    pub fn permutation(state: &mut Vec<U256>) {
         let p = Self::P;
-        let state_size = config.state_size;
+        let state_size = 3;
 
         // Handle initial round constant if needed
-        let mut round_offset = 0;
-        if config.has_initial_round_constant {
-            for i in 0..state_size {
-                state[i] = FiniteField::add(state[i], config.round_constants[0][i], p);
-            }
-            round_offset = 1;
-        }
+        let mut round_offset = 0;      
 
         // Main rounds
-        for round in 0..config.full_rounds {
+        for round in 0..55 {
             // S-box layer: raise each element to power
             for i in 0..state_size {
-                state[i] = FiniteField::power(state[i], config.power, p);
+                state[i] = FiniteField::power(state[i], 7, p);
             }
 
             // Linear layer: matrix multiplication + round constants
             let mut new_state = vec![U256::ZERO; state_size];
             for i in 0..state_size {
-                let mut acc = config.round_constants[round + round_offset][i];
+                let mut acc = ROUND_CONSTANTS[round + round_offset][i];
                 for j in 0..state_size {
-                    let prod = FiniteField::mul(config.mds[i][j], state[j], p);
+                    let prod = FiniteField::mul(MDS[i][j], state[j], p);
                     acc = FiniteField::add(acc, prod, p);
                 }
                 new_state[i] = acc;
