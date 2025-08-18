@@ -243,3 +243,7 @@ cargo stylus deploy  --endpoint='http://localhost:8547' --private-key="0xb6b15c8
 ```bash
 cargo stylus cache bid --endpoint='http://localhost:8547'   --private-key="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659" 0xd92773693917f0ff664f85c3cb698c33420947ff 10
 ```
+No verify to win time  
+```bash
+cargo stylus deploy  --endpoint='http://localhost:8547' --private-key="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659" --no-verify
+```

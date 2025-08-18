@@ -3,7 +3,7 @@ const { ethers } = require('ethers');
 // Configuration
 const PRIVATE_KEY = '0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659'; // Replace with your private key
 const RPC_URL = 'http://localhost:8547'; // Stylus testnet RPC
-const CONTRACT_ADDRESS = '0x525c2aba45f66987217323e8a05ea400c65d06dc'; // Replace with your deployed contract address
+let CONTRACT_ADDRESS = '0x525c2aba45f66987217323e8a05ea400c65d06dc'; // Replace with your deployed contract address
 
 // Contract ABI
 const ABI = [
@@ -146,9 +146,47 @@ main()
     .then(() => compareGasCosts())
     .then(() => {
         console.log('\n✅ Script completed successfully!');
-        process.exit(0);
     })
     .catch((error) => {
         console.error('💥 Fatal error:', error);
-        process.exit(1);
     });
+
+
+const provider = new ethers.JsonRpcProvider(RPC_URL);
+
+async function listen() {
+    // Listen to every new block
+    provider.on("block", async (blockNumber) => {
+        console.log(`⛓️ New block: ${blockNumber}`);
+
+        try {
+            // Fetch the full block with all transactions
+            const block = await provider.getBlock(blockNumber, true); // true = include full tx objects
+
+            for (const tx of block.transactions) {
+                console.log(`\n📜 Transaction: ${tx}`);
+                const receipt = await provider.getTransactionReceipt(tx);
+                // A contract deployment is when "to" is null
+                if (receipt && receipt.contractAddress && receipt.to === null) {
+                    console.log(`🚀 New contract deployed at: ${receipt.contractAddress}`);
+
+                    CONTRACT_ADDRESS = receipt.contractAddress; // Update the global contract address
+
+                    main()
+                        .then(() => compareGasCosts())
+                        .then(() => {
+                            console.log('\n✅ Script completed successfully!');
+                        })
+                        .catch((error) => {
+                            console.error('💥 Fatal error:', error);
+                        });
+
+                }
+            }
+        } catch (err) {
+            console.error("⚠️ Error fetching block:", err);
+        }
+    });
+}
+
+listen().catch(console.error);
