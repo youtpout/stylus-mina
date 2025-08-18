@@ -23,6 +23,23 @@ contract Counter {
 
 To set up more minimal example that still uses the Stylus SDK, use `cargo stylus new --minimal <YOUR_PROJECT_NAME>` under [OffchainLabs/cargo-stylus](https://github.com/OffchainLabs/cargo-stylus).
 
+## Launch dev node
+
+Nitro devnode 5Mandatory to launch stylus check)    
+Stylus is available on Arbitrum Sepolia, but we'll use nitro devnode which has a pre-funded wallet saving us the effort of wallet provisioning or running out of tokens to send transactions.
+
+Install your devnode
+```
+git clone https://github.com/OffchainLabs/nitro-devnode.git
+cd nitro-devnode
+
+```
+
+Launch your devnode
+```
+./run-dev-node.sh
+```
+
 ## Quick Start 
 
 Install [Rust](https://www.rust-lang.org/tools/install), and then install the Stylus CLI tool with Cargo

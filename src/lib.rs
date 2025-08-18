@@ -25,7 +25,12 @@ sol_storage! {
 #[public]
 impl PoseidonContract {
    
-    pub fn hash_list(&self, vec: Vec<U256>) -> U256 {
+    pub fn hash(&self, vec: Vec<U256>) -> U256 {
+        let poseidon_input = PoseidonHash::hash(vec);
+        return poseidon_input;
+    }
+
+     pub fn hash_function(&mut self, vec: Vec<U256>) -> U256 {
         let poseidon_input = PoseidonHash::hash(vec);
         return poseidon_input;
     }
