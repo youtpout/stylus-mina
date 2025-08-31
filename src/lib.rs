@@ -32,24 +32,6 @@ sol_storage! {
 /// Declare that `Counter` is a contract with the following external methods.
 #[public]
 impl PoseidonContract {
-    pub fn init_merkle(&mut self, depth: alloy_primitives::U256) -> Result<(), MerkleErrors> {
-        self.merkle.init(depth)
-    }
-
-    pub fn insert_leaf(
-        &mut self,
-        leaf: alloy_primitives::FixedBytes<32>,
-    ) -> Result<alloy_primitives::U256, MerkleErrors> {
-        self.merkle.insert(leaf)
-    }
-
-    pub fn merkle_root(&self) -> alloy_primitives::FixedBytes<32> {
-        self.merkle.root()
-    }
-
-    pub fn merkle_size(&self) -> alloy_primitives::U256 {
-        self.merkle.size()
-    }
 
     pub fn hash(&self, vec: Vec<alloy_primitives::U256>) -> alloy_primitives::U256 {
         let mut poseidon = PoseidonMina::<KimchiParams, FpKimchi>::new();

@@ -56,11 +56,9 @@ mod test {
         let depth = alloy_primitives::U256::from(256u32);
         tree.init(depth);
 
-        // tree is empty
-        assert_eq!(tree.size(), alloy_primitives::U256::ZERO);
 
         // Default
-        let root = tree.root();
+        let root = tree.get_root();
         println!("Root : {:?}", root);
 
         let default: FixedBytes<32> = alloy_primitives::FixedBytes::from_str(
@@ -75,19 +73,19 @@ mod test {
         )
         .unwrap();
 
-        tree.insert_at(
+        tree.set_leaf(
             alloy_primitives::U256::from(333u32),
             u32_to_fixedbytes32(1234u32),
         );
-        let int_root = tree.root();
+        let int_root = tree.get_root();
 
         assert_eq!(int_root, intermediary);
 
-        tree.insert_at(
+        tree.set_leaf(
             alloy_primitives::U256::from(55125u32),
             u32_to_fixedbytes32(88884u32),
         );
-        let new_root = tree.root();
+        let new_root = tree.get_root();
         let updated: FixedBytes<32> = alloy_primitives::FixedBytes::from_str(
             "0x2807b1d968f8ef5ba5a983bfe70a1a6270fd35a28445c2a71bbafd7b70008c6b",
         )
