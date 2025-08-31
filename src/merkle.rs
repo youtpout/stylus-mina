@@ -1,5 +1,11 @@
 #![allow(dead_code)]
 
+use openzeppelin_crypto::{
+    arithmetic::{uint, BigInteger},
+    field::{instance::FpKimchi, prime::PrimeField},
+    poseidon_mina::{instance::kimchi::KimchiParams, PoseidonMina},
+};
+
 use stylus_sdk::{
     alloy_primitives::{FixedBytes, U256},
     crypto::keccak,
@@ -35,44 +41,42 @@ sol_storage! {
 impl MerkleTree {
     /// Initialize the tree for a given `depth`. Can be called only once.
     /// Depth must be > 0 and <= 64 (practical limit for gas + memory).
-    pub fn init(&mut self, depth: U256) -> Result<(), MerkleErrors> {
+    pub fn init(&mut self, height: alloy_primitives::U256) -> Result<(), MerkleErrors> {
         if self.initialized.get() {
             return Err(MerkleErrors::AlreadyInitialized(AlreadyInitialized {}));
         }
-        let d: u32 = depth
+
+        let h: u32 = height
             .try_into()
             .map_err(|_| MerkleErrors::InvalidDepth(InvalidDepth {}))?;
-        if d == 0 || d > 64 {
+        if h == 0 || h > 256 {
             return Err(MerkleErrors::InvalidDepth(InvalidDepth {}));
         }
 
-        // prepare zeros and filledSubtrees
-        // zeros[0] := keccak(0x00)
-        let zero0: FixedBytes<32> = keccak([0u8; 1]).into();
+        self.depth.set(height);
+        self.nextIndex.set(alloy_primitives::U256::ZERO);
 
-        self.depth.set(U256::from(d));
-        self.nextIndex.set(U256::ZERO);
-
-        // build zeros array
+        // zeros[0] = 0
+        let zero0: FixedBytes<32> = FixedBytes::from([0u8; 32]);
         self.zeros.push(zero0);
-        for i in 0..d as usize {
-            let prev: FixedBytes<32> = self.zeros.get(i).unwrap();
-            let mut buf = [0u8; 64];
-            buf[..32].copy_from_slice(prev.as_slice());
-            buf[32..].copy_from_slice(prev.as_slice());
-            let next: FixedBytes<32> = keccak(buf).into();
+
+        // 0 for each level
+        for i in 1..h as usize {
+            let prev = self.zeros.get(i - 1).expect("prev zero exist");
+            let next = hash_pair(prev, prev);
             self.zeros.push(next);
         }
 
-        // filledSubtrees has d entries (levels 0..d-1), start with zeros[i]
-        for i in 0..d as usize {
-            let zi: FixedBytes<32> = self.zeros.get(i).unwrap();
+        // filledSubtrees = zeros[0..height-1]
+        for i in 0..h as usize {
+            let zi = self.zeros.get(i).expect("zero exist");
             self.filledSubtrees.push(zi);
         }
 
-        // initial root = zeros[d]
-        let root0: FixedBytes<32> = self.zeros.get(d as usize).unwrap();
+        // racine initiale = zeros[height-1]
+        let root0 = self.zeros.get((h - 1) as usize).expect("root exist");
         self.root.set(root0);
+
         self.initialized.set(true);
         Ok(())
     }
@@ -209,12 +213,25 @@ impl MerkleTree {
 }
 
 fn hash_pair(a: FixedBytes<32>, b: FixedBytes<32>) -> FixedBytes<32> {
-    let mut buf = [0u8; 64];
-    buf[..32].copy_from_slice(a.as_slice());
-    buf[32..].copy_from_slice(b.as_slice());
-    keccak(buf).into()
-}
+    // Convert FixedBytes<32> into U256 (big-endian)
+    let int_a = U256::from_be_bytes(a.0);
+    let int_b = U256::from_be_bytes(b.0);
 
+    // Create Poseidon hasher with Kimchi parameters
+    let mut poseidon = PoseidonMina::<KimchiParams, FpKimchi>::new();
+
+    // Convert U256 -> FpKimchi field elements and absorb them into the Poseidon state
+    let fa = FpKimchi::from_bigint(uint::U256::from(int_a));
+    let fb = FpKimchi::from_bigint(uint::U256::from(int_b));
+    poseidon.absorb(&[fa, fb]);
+
+    // Compute the Poseidon hash (squeeze one field element)
+    let hash = poseidon.squeeze();
+
+    // Convert back to [u8; 32] (big-endian) and wrap in FixedBytes<32>
+    let out:U256 = hash.into_bigint().into();
+    FixedBytes(out.to_be_bytes())
+}
 pub fn storagevec_set<'a, S: SimpleStorageType<'a>>(
     vec: &mut StorageVec<S>,
     index: usize,

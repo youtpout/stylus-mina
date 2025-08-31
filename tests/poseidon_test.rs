@@ -4,7 +4,9 @@ use stylus_sdk::alloy_primitives::U256;
 #[cfg(test)]
 mod test {
 
-    use alloy_primitives::Uint;
+    use std::str::FromStr;
+
+    use alloy_primitives::{FixedBytes, Uint};
 
     use super::*;
 
@@ -61,6 +63,11 @@ mod test {
         let root = tree.root();
         println!("Root : {:?}", root);
 
-        assert_eq!(root, alloy_primitives::FixedBytes::ZERO);
+        let default: FixedBytes<32> = alloy_primitives::FixedBytes::from_str(
+            "0x32415c1274eff27e74c93b8b6b41ced16bd64621a9830fe6fac8c2c31cb91fc0",
+        )
+        .unwrap();
+
+        assert_eq!(root, default);
     }
 }
