@@ -119,6 +119,43 @@ impl MerkleTree {
         Ok(ret)
     }
 
+    /// Insert a leaf at the given index and recalculate the root
+    pub fn insert_at(
+        &mut self,
+        mut index: U256,
+        leaf: FixedBytes<32>,
+    ) -> Result<FixedBytes<32>, MerkleErrors> {
+        let mut current = leaf;
+
+        let height: u32 = self
+            .depth
+            .get()
+            .try_into()
+            .map_err(|_| MerkleErrors::InvalidDepth(InvalidDepth {}))?;
+
+        // Go up the tree from the leaf to the root
+        for level in 0..height {
+            let is_left = index & U256::from(1u8) == U256::ZERO;
+
+            // Default sibling = zero value for this level
+            let sibling = self.zeros.get(level).unwrap();
+
+            // Recompute parent depending on position
+            current = if is_left {
+                hash_pair(current, sibling)
+            } else {
+                hash_pair(sibling, current)
+            };
+
+            // Move to parent index
+            index >>= 1;
+        }
+
+        // Update root
+        self.root.set(current);
+        Ok(current)
+    }
+
     pub fn root(&self) -> FixedBytes<32> {
         self.root.get()
     }
@@ -229,7 +266,7 @@ fn hash_pair(a: FixedBytes<32>, b: FixedBytes<32>) -> FixedBytes<32> {
     let hash = poseidon.squeeze();
 
     // Convert back to [u8; 32] (big-endian) and wrap in FixedBytes<32>
-    let out:U256 = hash.into_bigint().into();
+    let out: U256 = hash.into_bigint().into();
     FixedBytes(out.to_be_bytes())
 }
 pub fn storagevec_set<'a, S: SimpleStorageType<'a>>(

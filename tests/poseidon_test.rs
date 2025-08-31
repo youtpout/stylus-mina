@@ -69,5 +69,37 @@ mod test {
         .unwrap();
 
         assert_eq!(root, default);
+
+        let intermediary: FixedBytes<32> = alloy_primitives::FixedBytes::from_str(
+            "0x10fed4b36f9b7d58be9571a20f064288e5d5c9241fcb2b4a54f5900c88450741",
+        )
+        .unwrap();
+
+        tree.insert_at(
+            alloy_primitives::U256::from(333u32),
+            u32_to_fixedbytes32(1234u32),
+        );
+        let int_root = tree.root();
+
+        assert_eq!(int_root, intermediary);
+
+        tree.insert_at(
+            alloy_primitives::U256::from(55125u32),
+            u32_to_fixedbytes32(88884u32),
+        );
+        let new_root = tree.root();
+        let updated: FixedBytes<32> = alloy_primitives::FixedBytes::from_str(
+            "0x2807b1d968f8ef5ba5a983bfe70a1a6270fd35a28445c2a71bbafd7b70008c6b",
+        )
+        .unwrap();
+
+        assert_eq!(new_root, updated);
+    }
+
+    fn u32_to_fixedbytes32(x: u32) -> FixedBytes<32> {
+        let mut bytes = [0u8; 32];
+        // place the u32 at the end, big-endian
+        bytes[28..].copy_from_slice(&x.to_be_bytes());
+        FixedBytes(bytes)
     }
 }
