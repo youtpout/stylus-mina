@@ -32,12 +32,14 @@ sol! {
     error InvalidHeight();
     error AlreadyInitialized();
     error IndexOutOfRange();
+    error KeyTooLarge();
 }
 #[derive(SolidityError)]
 pub enum MerkleErrors {
     InvalidHeight(InvalidHeight),
     AlreadyInitialized(AlreadyInitialized),
     IndexOutOfRange(IndexOutOfRange),
+    KeyTooLarge(KeyTooLarge),
 }
 
 #[public]
@@ -80,8 +82,9 @@ impl MerkleTree {
     }
 
     /// Set a leaf at index and update parents to root
-    pub fn set_leaf(&mut self, index: U256, leaf: FixedBytes<32>) -> Result<(), MerkleErrors> {
-        let h_usize: usize = self.height.get().try_into().unwrap_or(1);
+    pub fn set_leaf(&mut self, key: U256, leaf: FixedBytes<32>) -> Result<(), MerkleErrors> {
+        let index = Self::key_to_index(key);
+        let h_usize: usize = self.height.get().try_into().unwrap();
         if index >= (U256::from(1u8) << (h_usize - 1)) {
             return Err(MerkleErrors::IndexOutOfRange(IndexOutOfRange {}));
         }
@@ -102,6 +105,35 @@ impl MerkleTree {
         }
 
         Ok(())
+    }
+
+    /// key to index like in mina merkle map
+    pub fn key_to_index(key: U256) -> U256 {
+        let bytes = key.to_le_bytes::<32>();
+
+        let mut n = U256::ZERO;
+        let mut bit_count = 0;
+
+        for &b in &bytes {
+            for i in 0..8 {
+                if bit_count == 255 {
+                    break;
+                }
+                let bit = (b >> i) & 1;
+
+                if bit_count == 254 && bit == 1 {
+                    panic!("Key must be less than 2^254");
+                }
+
+                n = (n << 1) | U256::from(bit as u8);
+                bit_count += 1;
+            }
+            if bit_count == 255 {
+                break;
+            }
+        }
+
+        n
     }
 
     pub fn get_root(&self) -> FixedBytes<32> {
