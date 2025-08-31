@@ -1,8 +1,10 @@
 use poseidon_mina::PoseidonContract;
-use stylus_sdk::{alloy_primitives::U256};
+use stylus_sdk::alloy_primitives::U256;
 
 #[cfg(test)]
 mod test {
+
+    use alloy_primitives::Uint;
 
     use super::*;
 
@@ -40,5 +42,25 @@ mod test {
             .unwrap(),
             result
         );
+    }
+
+    #[test]
+    fn test_merkle_tree_default_root() {
+        use stylus_sdk::testing::*;
+        let host = TestVM::default();
+        let mut tree = PoseidonContract::from(&host).merkle;
+
+        // Depth 256
+        let depth = alloy_primitives::U256::from(256u32);
+        tree.init(depth);
+
+        // tree is empty
+        assert_eq!(tree.size(), alloy_primitives::U256::ZERO);
+
+        // Default
+        let root = tree.root();
+        println!("Root : {:?}", root);
+
+        assert_eq!(root, alloy_primitives::FixedBytes::ZERO);
     }
 }
