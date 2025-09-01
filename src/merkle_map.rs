@@ -16,7 +16,6 @@ use stylus_sdk::{
 
 /// Storage layout: height, zeroes array and a mapping from composite key -> bytes32 node
 sol_storage! {
-    #[entrypoint]
     pub struct MerkleMap {
         /// tree height (number of levels). Example: 32
         uint256 height;

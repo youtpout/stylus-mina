@@ -7,8 +7,16 @@ let CONTRACT_ADDRESS = '0x525c2aba45f66987217323e8a05ea400c65d06dc'; // Replace 
 
 // Contract ABI
 const ABI = [
-    "function hash(uint256[] memory vec) external view returns (uint256)",
-    "function hashFunction(uint256[] memory vec) external returns (uint256)"
+    "function init(uint256 h)",
+    "function setLeaf(uint256 key, bytes32 leaf)",
+    "function getLeaf(uint256 key) view returns (uint256)",
+    "function getRoot() view returns (bytes32)",
+    "function hash(uint256[] vec) view returns (uint256)",
+    "function hashFunction(uint256[] vec) returns (uint256)",
+    "error InvalidHeight()",
+    "error AlreadyInitialized()",
+    "error IndexOutOfRange()",
+    "error KeyTooLarge()"
 ];
 
 async function main() {
@@ -96,6 +104,53 @@ async function main() {
 
         } catch (error) {
             console.log('❌ Error calling hashFunction():', error.message);
+
+            // Display gas info if available in error
+            if (error.reason) {
+                console.log('Reason:', error.reason);
+            }
+        }
+
+        try {
+            // --- init(256) ---
+            const gasInit = await contract.init.estimateGas(256);
+            console.log("Gas estimé pour init:", gasInit.toString());
+
+            const txInit = await contract.init(256);
+            await txInit.wait();
+
+            // --- setLeaf(333, 1234) ---
+            const gasSetLeaf1 = await contract.setLeaf.estimateGas(
+                333,
+                ethers.zeroPadValue(ethers.toBeHex(1234), 32) // bytes32
+            );
+            console.log("Gas estimé pour setLeaf(333, 1234):", gasSetLeaf1.toString());
+
+            const txSetLeaf1 = await contract.setLeaf(
+                333,
+                ethers.zeroPadValue(ethers.toBeHex(1234), 32)
+            );
+            await txSetLeaf1.wait();
+
+            // --- setLeaf(55125, 88884) ---
+            const gasSetLeaf2 = await contract.setLeaf.estimateGas(
+                55125,
+                ethers.zeroPadValue(ethers.toBeHex(88884), 32)
+            );
+            console.log("Gas estimé pour setLeaf(55125, 88884):", gasSetLeaf2.toString());
+
+            const txSetLeaf2 = await contract.setLeaf(
+                55125,
+                ethers.zeroPadValue(ethers.toBeHex(88884), 32)
+            );
+            await txSetLeaf2.wait();
+
+            // --- getRoot() ---
+            const root = await contract.getRoot();
+            console.log("Root récupéré:", root);
+
+        } catch (error) {
+            console.log('❌ Error calling merkle:', error.message);
 
             // Display gas info if available in error
             if (error.reason) {
