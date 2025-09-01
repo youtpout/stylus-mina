@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use openzeppelin_crypto::{
-    arithmetic::{uint, BigInteger},
+    arithmetic::uint,
     field::{instance::FpKimchi, prime::PrimeField},
     poseidon_mina::{instance::kimchi::KimchiParams, PoseidonMina},
 };
@@ -10,7 +10,6 @@ use alloc::{vec, vec::Vec};
 use alloy_sol_types::sol;
 use stylus_sdk::{
     alloy_primitives::{FixedBytes, U256},
-    crypto::keccak,
     prelude::*,
     storage::StorageVec,
 };
@@ -18,7 +17,7 @@ use stylus_sdk::{
 /// Storage layout: height, zeroes array and a mapping from composite key -> bytes32 node
 sol_storage! {
     #[entrypoint]
-    pub struct MerkleTree {
+    pub struct MerkleMap {
         /// tree height (number of levels). Example: 32
         uint256 height;
         /// default zero-hashes per level (zeros[0]..zeros[height-1])
@@ -35,7 +34,7 @@ sol! {
     error KeyTooLarge();
 }
 #[derive(SolidityError)]
-pub enum MerkleErrors {
+pub enum MerkleMapErrors {
     InvalidHeight(InvalidHeight),
     AlreadyInitialized(AlreadyInitialized),
     IndexOutOfRange(IndexOutOfRange),
@@ -43,16 +42,16 @@ pub enum MerkleErrors {
 }
 
 #[public]
-impl MerkleTree {
+impl MerkleMap {
     /// Initialize the tree: set height and precompute zeroes
-    pub fn init(&mut self, h: U256) -> Result<(), MerkleErrors> {
+    pub fn init(&mut self, h: U256) -> Result<(), MerkleMapErrors> {
         if self.height.get() != U256::ZERO {
-            return Err(MerkleErrors::AlreadyInitialized(AlreadyInitialized {}));
+            return Err(MerkleMapErrors::AlreadyInitialized(AlreadyInitialized {}));
         }
 
         let height_usize: usize = h
             .try_into()
-            .map_err(|_| MerkleErrors::InvalidHeight(InvalidHeight {}))?;
+            .map_err(|_| MerkleMapErrors::InvalidHeight(InvalidHeight {}))?;
         self.height.set(h);
 
         let zero0 = FixedBytes::from([0u8; 32]);
@@ -81,12 +80,17 @@ impl MerkleTree {
         self.zeroes.get(level).unwrap()
     }
 
+    pub fn get_leaf(&self, key: U256) -> U256 {
+        let index = Self::key_to_index(key);
+        return self.get_node(U256::ZERO, index).into();
+    }
+
     /// Set a leaf at index and update parents to root
-    pub fn set_leaf(&mut self, key: U256, leaf: FixedBytes<32>) -> Result<(), MerkleErrors> {
+    pub fn set_leaf(&mut self, key: U256, leaf: FixedBytes<32>) -> Result<(), MerkleMapErrors> {
         let index = Self::key_to_index(key);
         let h_usize: usize = self.height.get().try_into().unwrap();
         if index >= (U256::from(1u8) << (h_usize - 1)) {
-            return Err(MerkleErrors::IndexOutOfRange(IndexOutOfRange {}));
+            return Err(MerkleMapErrors::IndexOutOfRange(IndexOutOfRange {}));
         }
 
         // Set leaf

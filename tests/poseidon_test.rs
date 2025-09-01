@@ -50,7 +50,7 @@ mod test {
     fn test_merkle_tree_default_root() {
         use stylus_sdk::testing::*;
         let host = TestVM::default();
-        let mut tree: poseidon_mina::MerkleTree = PoseidonContract::from(&host).merkle;
+        let mut tree: poseidon_mina::PoseidonContract = PoseidonContract::from(&host);
 
         // Depth 256
         let depth = alloy_primitives::U256::from(256u32);
@@ -73,7 +73,7 @@ mod test {
         .unwrap();
 
         let val =U256::from_str("0x5940000000000000000000000000000000000000000000000000000000000000").unwrap();
-        let index = poseidon_mina::MerkleTree::key_to_index(alloy_primitives::U256::from(333u32));
+        let index = poseidon_mina::MerkleMap::key_to_index(alloy_primitives::U256::from(333u32));
         assert_eq!(val, index);
 
 
